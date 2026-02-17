@@ -1,0 +1,11 @@
+langchain-openai
+langchain-anthropic
+langgraph
+langchain-community
+faiss-cpu
+datasets
+python-dotenv
+langchain-google-genai
+sentence-transformers
+langchain-huggingface
+langchain-groq
