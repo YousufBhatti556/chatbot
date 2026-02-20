@@ -1,42 +1,31 @@
-
 from typing import Literal
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.types import Command
 from state import AgentState
-from vector_store import get_retriever
+from vector_store import retrieve_similar_context
 
 def retrieve(state: AgentState) -> Command[Literal["generator", "escalator"]]:
     """
     Retriever Agent:
-    Retrieves documents based on the latest user query.
-    Performs a self-check on relevance.
+    Retrieves semantic documents from Pinecone based on the latest user query.
     """
     latest_message = state["messages"][-1]
     query = latest_message.content
     
-    retriever = get_retriever()
-    if not retriever:
-        # Fallback if vector store fails
-        return Command(
-            update={"retrieved_docs": []},
-            goto="escalator"
-        )
-        
-    docs = retriever.invoke(query)
+    user_id = state.get("user_info", {}).get("user_id", "default_user")
     
-    # Simple Relevance Check (Self-Correction Loop)
-    # in a real system, you might use an LLM or cross-encoder to score relevance.
-    # Here, we'll check if we got any docs and if the query is strictly out of domain.
-    # For demo purposes, let's say queries about "weather" are irrelevant to MakTek.
-    if not docs or "weather" in query.lower():
+    docs = retrieve_similar_context(user_id, query)
+    
+    # Simple Relevance Check
+    if not docs and "weather" in query.lower():
         print(" [SYSTEM] Relevance Check Failed -> Escalating")
         return Command(
             update={"retrieved_docs": []},
             goto="escalator"
         )
 
-    print(f" [SYSTEM] Retrieved {len(docs)} documents.")
+    print(f" [SYSTEM] Retrieved {len(docs)} documents from Pinecone Semantic Memory.")
     return Command(
-        update={"retrieved_docs": [d.page_content for d in docs]},
+        update={"retrieved_docs": docs},
         goto="generator"
     )

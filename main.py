@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from graph import app
+from db import init_db, save_message
+from vector_store import init_pinecone, store_embedding
 
 # Ensure API key is set for testing
 if not os.environ.get("GROQ_API_KEY"):
@@ -18,6 +20,10 @@ if not os.environ.get("GROQ_API_KEY"):
 
 def run_chat_loop():
     print("Initializing MakTek Support System...")
+    
+    # Initialize DB and Pinecone
+    init_db()
+    init_pinecone()
     
     # Simulate a user session
     thread_id = str(uuid.uuid4())
@@ -37,6 +43,11 @@ def run_chat_loop():
         user_input = input("User: ")
         if user_input.lower() in ["quit", "exit"]:
             break
+            
+        # Save user message to persistent DB and vector store
+        user_msg_id = str(uuid.uuid4())
+        save_message(user_id=user_id, role="user", content=user_input, thread_id=thread_id, message_id=user_msg_id)
+        store_embedding(user_id=user_id, message_id=user_msg_id, content=user_input, role="user")
             
         # Invoke the graph
         # We pass the user input as a new message
@@ -66,6 +77,11 @@ def run_chat_loop():
         
         if final_answer:
             print(f"MakTek: {final_answer}")
+            # Save assistant message to persistent DB and vector store
+            ai_msg_id = str(uuid.uuid4())
+            save_message(user_id=user_id, role="assistant", content=final_answer, thread_id=thread_id, message_id=ai_msg_id)
+            store_embedding(user_id=user_id, message_id=ai_msg_id, content=final_answer, role="assistant")
+            
         else:
              # Fallback if no final answer generated (e.g. escalation only or partial validation)
              # Logic needs to be robust to pull from state if stream didn't catch it

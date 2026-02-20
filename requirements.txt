@@ -9,3 +9,6 @@ langchain-google-genai
 sentence-transformers
 langchain-huggingface
 langchain-groq
+psycopg2-binary
+pinecone-client
+langchain-pinecone

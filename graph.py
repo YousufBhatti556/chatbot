@@ -12,6 +12,7 @@ from agents.supervisor import supervisor
 from agents.retriever import retrieve
 from agents.generator import generate
 from agents.escalator import escalate
+from agents.intent import intent_detector
 
 # Connect to a persistent SQLite DB for long-term memory mock (or actual InMemoryStore use)
 # For this task, we use InMemoryStore as requested for "Long-Term" (though technically ephemeral without persistence)
@@ -65,10 +66,17 @@ def build_graph():
     builder.add_node("generator", generate)
     builder.add_node("escalator", escalate)
     builder.add_node("summarizer", summarize_conversation)
+    builder.add_node("intent_detector", intent_detector)
 
     # 2. Add Edges
-    # Start at Supervisor
-    builder.add_edge(START, "summarizer")
+    # Start at Intent Detector
+    builder.add_edge(START, "intent_detector")
+    
+    # Intent Detector -> Summarizer (if not end)
+    # The Intent Detector uses Command to go to __end__ or summarizer
+    # But we need to define the implicit edge for clarity/visualization if using conditional logic outside Command
+    # With Command, we just ensure nodes exist.
+    
     builder.add_edge("summarizer", "supervisor")
     
     # The Supervisor uses Command to go to other nodes, so we don't need explicit conditional_edges here
